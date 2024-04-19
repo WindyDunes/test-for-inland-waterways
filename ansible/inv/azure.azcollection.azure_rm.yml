@@ -1,0 +1,6 @@
+plugin: azure_rm
+include_vm_resource_groups:
+  - caci-resource-group
+auth_source: auto
+  #conditional_groups:
+  #caci-demo: "'True' in tags.caci-demo"
