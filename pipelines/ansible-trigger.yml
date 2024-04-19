@@ -1,0 +1,7 @@
+resources: 
+  pipelines: 
+  - pipeline: ansible-release
+    trigger: 
+      branches:
+        include: 
+        - ansible-release

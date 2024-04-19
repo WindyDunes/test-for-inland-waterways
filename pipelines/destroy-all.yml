@@ -1,0 +1,68 @@
+# CACI Deploy All
+
+trigger: none
+
+jobs:
+  - job: destroy_all
+    displayName: Demonstration Pipeline Remove Everything
+    pool:
+      vmImage: ubuntu-latest
+
+    steps:
+#    - bash: |
+#        az login
+#        echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID]$(az account show --query="id" -o tsv)"
+#        echo "##vso[task.setvariable variable=ARM_CLIENT_ID]${servicePrincipalId}"
+#        echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET]${servicePrincipalKey}"
+#        echo "##vso[task.setvariable variable=ARM_TENANT_ID]${tenantId}"
+#      displayName: 'Source ARM values'
+#      env:
+#        AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+
+    - bash: echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+      displayName: "Add upstream Hashicorp repository"
+
+    - bash: wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+      displayName: "Configure Hashicorp GPG Signing key"
+
+    - bash: sudo apt-get update && sudo apt-get install terraform -y
+      displayName: "Installing Latest Version of Terraform"
+
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Init resource groups"
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: 'michael.fortuna-caci-demo-devops-service-connection'
+        backendAzureRmResourceGroupName: 'tfstate'
+        backendAzureRmStorageAccountName: 'tfstate30694'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'terraform.tfstate'
+        workingDirectory: terraform/
+
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Validate resource groups"
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+        workingDirectory: terraform/
+
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Plan resource groups"
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        commandOptions: '-destroy -out main.tfplan'
+        environmentServiceNameAzureRM: 'michael.fortuna-caci-demo-devops-service-connection'
+        workingDirectory: terraform/
+
+
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Destroy resource groups"
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        commandOptions: 'main.tfplan'
+        environmentServiceNameAzureRM: 'michael.fortuna-caci-demo-devops-service-connection'
+        workingDirectory: terraform/
+
